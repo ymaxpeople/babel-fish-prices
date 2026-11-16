@@ -9,12 +9,12 @@
 
 ## 進行中
 
-（なし）
+- [ ] A3：Render 無料枠へのデプロイ（2026-11-16、置き場所は Render 無料枠で決定）— 配置側の準備（requirements.txt / Procfile / runtime.txt / main.py の PORT・HOST 対応 / render.yaml）は Muse が PR で提出。Render のアカウント作成とデプロイ実行は ようすけ
 
 ## 次にやること
 
 - [ ] A3：Don't Panic の画面表示価格と API 計算値の照合（reserves の実測は grokbot 環境で完了済み、2026-11-14）— 担当：未定
-- [ ] A3：デプロイ（API を実際に動かすサーバー）の検討 — Phase 0 後半
+- [ ] A3：公開 URL ができたら、価格ダッシュボードを固定スナップショットからライブ API に切り替え — 担当：Muse
 
 ## 未決事項
 

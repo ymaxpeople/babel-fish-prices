@@ -9,12 +9,11 @@
 
 ## 進行中
 
-- [ ] A3：Render 無料枠へのデプロイ（2026-11-16、置き場所は Render 無料枠で決定）— 配置側の準備（requirements.txt / Procfile / runtime.txt / main.py の PORT・HOST 対応 / render.yaml）は Muse が PR で提出。Render のアカウント作成とデプロイ実行は ようすけ
+- [ ] A3：ダッシュボードのライブ切替 — API に CORS ヘッダを追加（PR で提出、担当：Muse）。マージ＋Render 再デプロイ後に、ダッシュボードをライブ API 取得へ変更する
 
 ## 次にやること
 
 - [ ] A3：Don't Panic の画面表示価格と API 計算値の照合（reserves の実測は grokbot 環境で完了済み、2026-11-14）— 担当：未定
-- [ ] A3：公開 URL ができたら、価格ダッシュボードを固定スナップショットからライブ API に切り替え — 担当：Muse
 
 ## 未決事項
 
@@ -31,3 +30,4 @@
 - [x] KET の信頼度分類：流動性 約$87（2026-11-14、grokbot 環境で実測）のため unpriced で確定
 - [x] A3 Phase 0 APIスケルトンのレビュー完了（2026-11-14、PR #2。grokbot の必須修正6件＋新規指摘N1を反映、テスト15/15パス、ライブ実測で MARVIN B / ZAP C / KET unpriced を確認）
 - [x] PR #2 を main へマージ（2026-11-14、merge commit eb49697）。作業場はこのリポジトリ `ymaxpeople/babel-fish-prices` で確定
+- [x] A3 Phase 0 API のデプロイ（2026-11-16、Render 無料枠、PR #4 をマージして実施）。公開 URL: https://babel-fish-prices.onrender.com — Muse が /health・/v1/prices でライブ価格を確認済み

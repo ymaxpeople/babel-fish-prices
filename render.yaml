@@ -10,3 +10,9 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.3
+  - type: web
+    name: babel-fish-prices-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: echo "static site - no build step"
+    staticPublishPath: .

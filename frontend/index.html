@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Babel Fish Prices — InfiniteDrive トークン価格ダッシュボード</title>
+<meta name="description" content="InfiniteDrive チェーンのトークン価格（USD）を、信頼度ラベル付きで表示する公開ダッシュボード。価格は Babel Fish Prices API から取得。">
+<style>
+  :root {
+    --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #e6edf3;
+    --muted: #8b949e; --accent: #58a6ff;
+    --a: #3fb950; --b: #58a6ff; --c: #d29922; --u: #8b949e;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font-family: system-ui, -apple-system, "Segoe UI", sans-serif; line-height: 1.55; }
+  .wrap { max-width: 72rem; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
+  header h1 { font-size: 1.6rem; margin: 0 0 .25rem; }
+  header p.sub { color: var(--muted); margin: 0 0 1rem; }
+  .statusbar { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center;
+               background: var(--card); border: 1px solid var(--border);
+               border-radius: .6rem; padding: .6rem .9rem; margin-bottom: 1rem; }
+  .pill { font-weight: 700; padding: .1rem .6rem; border-radius: 999px; font-size: .85rem; }
+  .pill.live { background: rgba(63,185,80,.15); color: var(--a); border: 1px solid var(--a); }
+  .pill.snap { background: rgba(210,153,34,.12); color: var(--c); border: 1px solid var(--c); }
+  .pill.loading { background: rgba(88,166,255,.12); color: var(--b); border: 1px solid var(--b); }
+  button { background: var(--card); color: var(--text); border: 1px solid var(--border);
+           border-radius: .5rem; padding: .45rem .9rem; cursor: pointer; font-size: .95rem; }
+  button:hover { border-color: var(--accent); }
+  .controls { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; margin-bottom: 1rem; }
+  .controls input[type="search"], .controls select {
+    background: var(--card); color: var(--text); border: 1px solid var(--border);
+    border-radius: .5rem; padding: .45rem .7rem; font-size: .95rem; }
+  .chips { display: flex; gap: .4rem; flex-wrap: wrap; }
+  .chip { padding: .35rem .8rem; border-radius: 999px; font-size: .9rem; }
+  .chip.active { border-color: var(--accent); color: var(--accent); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(15.5rem, 1fr)); gap: .8rem; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: .7rem;
+          padding: .9rem 1rem; cursor: pointer; }
+  .card:hover { border-color: var(--accent); }
+  .card .sym { font-size: 1.15rem; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+  .badge { font-size: .78rem; font-weight: 700; padding: .08rem .55rem; border-radius: 999px; border: 1px solid; }
+  .badge.A { color: var(--a); border-color: var(--a); }
+  .badge.B { color: var(--b); border-color: var(--b); }
+  .badge.C { color: var(--c); border-color: var(--c); }
+  .badge.unpriced { color: var(--u); border-color: var(--u); }
+  .price { font-size: 1.45rem; font-weight: 700; margin: .35rem 0 .15rem; }
+  .price.none { color: var(--muted); font-size: 1.1rem; }
+  .meta { color: var(--muted); font-size: .88rem; }
+  .detail { display: none; margin-top: .6rem; border-top: 1px solid var(--border); padding-top: .6rem;
+            font-size: .88rem; color: var(--muted); word-break: break-all; }
+  .card.open .detail { display: block; }
+  .detail a { color: var(--accent); }
+  .warn { color: var(--c); }
+  section.info { margin-top: 2rem; background: var(--card); border: 1px solid var(--border);
+                 border-radius: .7rem; padding: 1rem 1.2rem; }
+  section.info h2 { font-size: 1.05rem; margin-top: 0; }
+  footer { color: var(--muted); margin-top: 2rem; font-size: .9rem; }
+  footer a, section.info a { color: var(--accent); }
+  .empty { color: var(--muted); padding: 1rem 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🐟 Babel Fish Prices</h1>
+    <p class="sub">InfiniteDrive チェーン（chain ID 421018）のトークン価格ダッシュボード。価格は Don't Panic Finance のプール残高から算出しています。流動性の薄いチェーンのため、価格は参考値（reference only）です。</p>
+  </header>
+
+  <div class="statusbar">
+    <span id="statusPill" class="pill loading">取得中…</span>
+    <span id="statusText">API から最新価格を取得しています（無料枠の起動待ちで最大約1分かかることがあります）</span>
+    <span style="flex:1"></span>
+    <button id="refreshBtn" type="button">再取得</button>
+  </div>
+
+  <div class="controls">
+    <input id="search" type="search" placeholder="トークンを検索（例: FISH）" aria-label="トークンを検索">
+    <div class="chips" id="chips">
+      <button class="chip active" data-f="all" type="button">すべて</button>
+      <button class="chip" data-f="A" type="button">A</button>
+      <button class="chip" data-f="B" type="button">B</button>
+      <button class="chip" data-f="C" type="button">C</button>
+      <button class="chip" data-f="unpriced" type="button">unpriced</button>
+    </div>
+    <select id="sort" aria-label="並び替え">
+      <option value="liquidity">流動性の高い順</option>
+      <option value="price">価格の高い順</option>
+      <option value="symbol">名前順</option>
+    </select>
+  </div>
+
+  <main id="cards" class="grid"></main>
+  <p id="emptyMsg" class="empty" style="display:none">条件に合うトークンがありません。</p>
+
+  <section class="info">
+    <h2>信頼度ラベルについて</h2>
+    <p>各価格には、土台になるプールの流動性と価格の算出経路（ホップ数）から付けた信頼度を表示します。A が最も確かで、C は参考程度、<b>unpriced</b> は流動性が小さすぎるため価格を出しません（0 とは表示しません）。経由するプールが多い価格は1段階下がり、土台のアンカー（42 / USDT プール）の信頼度を超えることもありません。</p>
+    <p>データ取得元: <a href="https://babel-fish-prices.onrender.com/v1/prices">Babel Fish Prices API</a>（<a href="https://babel-fish-prices.onrender.com/">API の案内ページ</a>）</p>
+  </section>
+
+  <footer>
+    <p>ソースコード: <a href="https://github.com/ymaxpeople/babel-fish-prices">github.com/ymaxpeople/babel-fish-prices</a> ／ 価格は投資判断の材料ではなく参考値です。</p>
+  </footer>
+</div>
+
+<script>
+"use strict";
+const API_URL = "https://babel-fish-prices.onrender.com/v1/prices";
+const EXPLORER = "https://scan.infinitedrive.xyz/address/";
+
+// フォールバック用スナップショット: grokbot がライブ検証した確定値
+// （2026-11-14 10:24 JST、ブロック 4417017–4417020）。API に届かない時だけ表示する。
+const SNAPSHOT = {
+  generated_at: 1794619440,
+  stale: false, partial: false, pair_errors: [],
+  tokens: [
+    {symbol: "USDT", address: "0xC2684966e5c95B2bc636FB4a1f3Da9Ad23d94753", price: 1.0, liquidity_usd: null, staleness_seconds: null, confidence: "A", route: ["USDT"], divergence_warning: false},
+    {symbol: "42", address: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", price: 0.69650, liquidity_usd: 21688, staleness_seconds: null, confidence: "B", route: ["42", "USDT"], divergence_warning: false},
+    {symbol: "FISH", address: "0x2c32120a12B754272d9E85C57F64b50cA2C43513", price: 1.35491, liquidity_usd: 66943, staleness_seconds: null, confidence: "B", route: ["FISH", "42", "USDT"], divergence_warning: false},
+    {symbol: "PANIC", address: "0xfAA842c8871f7F99c183F77871f79ce07DD056Cd", price: 0.00041194, liquidity_usd: 41818, staleness_seconds: null, confidence: "B", route: ["PANIC", "42", "USDT"], divergence_warning: false},
+    {symbol: "MARVIN", address: "0xa307362f8a756722541dde6255AECf64F35Ba337", price: 0.00030700, liquidity_usd: 56134, staleness_seconds: null, confidence: "B", route: ["MARVIN", "FISH", "42", "USDT"], divergence_warning: false},
+    {symbol: "ZAP", address: "0x89195Ca5C954b6f99b78f4A2Aa5435A75Dc5B256", price: 0.11660, liquidity_usd: 27042, staleness_seconds: null, confidence: "C", route: ["ZAP", "FISH", "42", "USDT"], divergence_warning: false},
+    {symbol: "FOXXEY", address: "0x68D5A28D3bf09a32d3b9C35714aB7A6166Ae2a00", price: 0.018161, liquidity_usd: 12476, staleness_seconds: null, confidence: "C", route: ["FOXXEY", "42", "USDT"], divergence_warning: false},
+    {symbol: "KET", address: "0xb749D42E6004dB590b2f04F32B87485402A061E2", price: null, liquidity_usd: 87, staleness_seconds: null, confidence: "unpriced", route: ["KET", "FISH", "42", "USDT"], divergence_warning: false},
+    {symbol: "TOWEL", address: "0xD0f48123638BD243C3a0eE49D0D7BEb7404F9DE4", price: null, liquidity_usd: null, staleness_seconds: null, confidence: "unpriced", route: [], divergence_warning: false},
+    {symbol: "GUIDE", address: null, price: null, liquidity_usd: null, staleness_seconds: null, confidence: "unpriced", route: [], divergence_warning: false},
+    {symbol: "SOV", address: null, price: null, liquidity_usd: null, staleness_seconds: null, confidence: "unpriced", route: [], divergence_warning: false},
+    {symbol: "VIC", address: null, price: null, liquidity_usd: null, staleness_seconds: null, confidence: "unpriced", route: [], divergence_warning: false},
+    {symbol: "BFOXX", address: null, price: null, liquidity_usd: null, staleness_seconds: null, confidence: "unpriced", route: [], divergence_warning: false}
+  ]
+};
+
+let state = { data: SNAPSHOT, live: false, filter: "all", query: "", sort: "liquidity" };
+
+function fmtPrice(p) {
+  if (p === null || p === undefined) return null;
+  let s = Number(p).toPrecision(6);
+  if (s.includes(".")) s = s.replace(/0+$/, "").replace(/\.$/, "");
+  return "$" + s;
+}
+function fmtLiq(v) {
+  if (v === null || v === undefined) return "—";
+  if (v < 1000) return "$" + v.toFixed(2);
+  return "$" + Math.round(v).toLocaleString("en-US");
+}
+function fmtTime(epoch) {
+  const d = new Date(epoch * 1000);
+  return d.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" }) + " JST";
+}
+function fmtStale(sec) {
+  if (sec === null || sec === undefined) return null;
+  if (sec < 90) return "最終取引 約" + Math.round(sec) + "秒前";
+  if (sec < 5400) return "最終取引 約" + Math.round(sec / 60) + "分前";
+  return "最終取引 約" + (sec / 3600).toFixed(1) + "時間前";
+}
+
+function render() {
+  const pill = document.getElementById("statusPill");
+  const text = document.getElementById("statusText");
+  if (state.live) {
+    pill.className = "pill live"; pill.textContent = "ライブ";
+    let t = "取得時刻: " + fmtTime(state.data.generated_at);
+    if (state.data.stale) t += "（API が古いキャッシュを返しています）";
+    if (state.data.partial) t += "（一部ペアの取得に失敗: " + (state.data.pair_errors || []).join(", ") + "）";
+    text.textContent = t;
+  } else {
+    pill.className = "pill snap"; pill.textContent = "スナップショット";
+    text.textContent = "ライブ取得に失敗したため、確定スナップショット（2026-11-14 10:24 JST）を表示しています。再取得ボタンで再試行できます。";
+  }
+
+  let tokens = state.data.tokens.slice();
+  if (state.filter !== "all") tokens = tokens.filter(t => t.confidence === state.filter);
+  if (state.query) {
+    const q = state.query.toUpperCase();
+    tokens = tokens.filter(t => t.symbol.toUpperCase().includes(q));
+  }
+  if (state.sort === "liquidity") tokens.sort((a, b) => (b.liquidity_usd || -1) - (a.liquidity_usd || -1));
+  if (state.sort === "price") tokens.sort((a, b) => (b.price || -1) - (a.price || -1));
+  if (state.sort === "symbol") tokens.sort((a, b) => a.symbol.localeCompare(b.symbol));
+
+  const main = document.getElementById("cards");
+  main.innerHTML = "";
+  document.getElementById("emptyMsg").style.display = tokens.length ? "none" : "block";
+  for (const t of tokens) {
+    const card = document.createElement("article");
+    card.className = "card";
+    const price = fmtPrice(t.price);
+    const stale = fmtStale(t.staleness_seconds);
+    const route = (t.route && t.route.length) ? t.route.join(" → ") : "—";
+    const addr = t.address
+      ? '<a href="' + EXPLORER + t.address + '" target="_blank" rel="noopener">' + t.address + "</a>"
+      : "（アドレス未確認）";
+    card.innerHTML =
+      '<div class="sym"><span>' + t.symbol + '</span>' +
+      '<span class="badge ' + t.confidence + '">' + (t.confidence === "unpriced" ? "unpriced" : "信頼度 " + t.confidence) + "</span></div>" +
+      (price ? '<div class="price">' + price + "</div>"
+             : '<div class="price none">価格なし（unpriced）</div>') +
+      '<div class="meta">流動性 ' + fmtLiq(t.liquidity_usd) + "<br>ルート " + route +
+      (stale ? "<br>" + stale : "") +
+      (t.divergence_warning ? '<br><span class="warn">⚠ スポットと TWAP の乖離が大きい価格です</span>' : "") +
+      "</div>" +
+      '<div class="detail">アドレス: ' + addr + "<br>タップで閉じる</div>";
+    card.addEventListener("click", () => card.classList.toggle("open"));
+    main.appendChild(card);
+  }
+}
+
+async function load() {
+  const pill = document.getElementById("statusPill");
+  pill.className = "pill loading"; pill.textContent = "取得中…";
+  document.getElementById("statusText").textContent =
+    "API から最新価格を取得しています（無料枠の起動待ちで最大約1分かかることがあります）";
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 60000);
+  try {
+    const res = await fetch(API_URL, { signal: ctrl.signal });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    if (!data || !Array.isArray(data.tokens)) throw new Error("unexpected response");
+    state.data = data; state.live = true;
+  } catch (e) {
+    state.data = SNAPSHOT; state.live = false;
+  } finally {
+    clearTimeout(timer);
+    render();
+  }
+}
+
+document.getElementById("refreshBtn").addEventListener("click", load);
+document.getElementById("search").addEventListener("input", e => { state.query = e.target.value; render(); });
+document.getElementById("sort").addEventListener("change", e => { state.sort = e.target.value; render(); });
+document.getElementById("chips").addEventListener("click", e => {
+  const btn = e.target.closest(".chip");
+  if (!btn) return;
+  document.querySelectorAll(".chip").forEach(c => c.classList.remove("active"));
+  btn.classList.add("active");
+  state.filter = btn.dataset.f;
+  render();
+});
+
+render();  // まずスナップショットで即表示し、裏でライブ取得する
+load();
+</script>
+</body>
+</html>

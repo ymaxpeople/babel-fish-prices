@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: babel-fish-prices
+    runtime: python
+    rootDir: babel-fish-prices
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python3 main.py --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.3

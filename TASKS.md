@@ -9,7 +9,7 @@
 
 ## 進行中
 
-- [ ] A3：価格ダッシュボードを公開ページとして出す（frontend/ を Render 静的サイトで公開。PR で提出、担当：Muse。Render 側の Blueprint 反映は ようすけ）
+- [ ] A3：API ルート案内ページから公開ダッシュボードへのリンク追加（PR で提出、担当：Muse）
 
 ## 次にやること
 
@@ -33,3 +33,4 @@
 - [x] A3 Phase 0 API のデプロイ（2026-11-16、Render 無料枠、PR #4 をマージして実施）。公開 URL: https://babel-fish-prices.onrender.com — Muse が /health・/v1/prices でライブ価格を確認済み
 - [x] ダッシュボードのライブ切替（2026-11-16）— CORS ヘッダ追加（PR #5、マージ・再デプロイ済み、Muse がヘッダ返却を確認）＋ダッシュボードをライブ取得方式に改修（失敗時はスナップショットにフォールバック）
 - [x] API ルート（/）の案内ページ（2026-11-16、PR #6、マージ・反映済み。Muse が表示を確認）
+- [x] 価格ダッシュボードの公開ページ化（2026-11-16、PR #7 マージ＋Render Blueprint 反映）。公開 URL: https://babel-fish-prices-frontend.onrender.com — Muse がページ配信を確認

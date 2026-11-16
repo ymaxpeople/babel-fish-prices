@@ -37,6 +37,49 @@ def make_handler(service: PriceService):
             self.end_headers()
             self.wfile.write(body)
 
+        def _send_html(self, html, status=200):
+            body = html.encode("utf-8")
+            self.send_response(status)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(body)
+
+        def _index_page(self):
+            health = service.health()
+            status = health.get("status", "unknown")
+            mode = health.get("mode", "unknown")
+            priced = health.get("tokens_priced", 0)
+            return f"""<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Babel Fish Prices — InfiniteDrive Price API</title>
+<style>
+  body {{ font-family: system-ui, sans-serif; margin: 2rem auto; max-width: 44rem; padding: 0 1rem; line-height: 1.6; }}
+  code {{ background: rgba(127,127,127,.15); padding: .1em .35em; border-radius: .3em; }}
+  li {{ margin: .3em 0; }}
+  .status {{ color: #2a7d2a; font-weight: bold; }}
+</style>
+</head>
+<body>
+<h1>Babel Fish Prices</h1>
+<p>InfiniteDrive チェーン（chain ID 421018）のトークン価格を返す、公開・読み取り専用の価格 API です。価格は Don't Panic Finance のプール残高から算出しています。流動性が薄いチェーンのため、価格は参考値（reference only）として利用してください。</p>
+<p>状態: <span class="status">{status}</span> / モード: {mode} / 価格提供中: {priced} トークン</p>
+<h2>エンドポイント</h2>
+<ul>
+  <li><a href="/health"><code>GET /health</code></a> — 死活確認と状態</li>
+  <li><a href="/v1/prices"><code>GET /v1/prices</code></a> — 全トークンの価格一覧</li>
+  <li><a href="/v1/price/0x2c32120a12B754272d9E85C57F64b50cA2C43513"><code>GET /v1/price/{{tokenAddress}}</code></a> — 1トークンの価格（リンクは FISH の例）</li>
+  <li><code>GET /v1/twap/{{tokenAddress}}?window=1h|24h</code> — TWAP（時間加重平均価格）</li>
+  <li><a href="/v1/pairs"><code>GET /v1/pairs</code></a> — 対象ペア一覧</li>
+</ul>
+<p>ソースコード: <a href="https://github.com/ymaxpeople/babel-fish-prices">github.com/ymaxpeople/babel-fish-prices</a></p>
+</body>
+</html>"""
+
         def do_OPTIONS(self):
             # CORS preflight for browser fetch() calls.
             self.send_response(204)
@@ -50,6 +93,8 @@ def make_handler(service: PriceService):
             parsed = urlparse(self.path)
             path = parsed.path.rstrip("/") or "/"
             try:
+                if path == "/":
+                    return self._send_html(self._index_page())
                 if path == "/health":
                     return self._send_json(service.health())
                 if path == "/v1/prices":

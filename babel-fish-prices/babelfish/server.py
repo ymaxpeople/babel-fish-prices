@@ -68,6 +68,7 @@ def make_handler(service: PriceService):
 <h1>Babel Fish Prices</h1>
 <p>InfiniteDrive チェーン（chain ID 421018）のトークン価格を返す、公開・読み取り専用の価格 API です。価格は Don't Panic Finance のプール残高から算出しています。流動性が薄いチェーンのため、価格は参考値（reference only）として利用してください。</p>
 <p>状態: <span class="status">{status}</span> / モード: {mode} / 価格提供中: {priced} トークン</p>
+<p>ブラウザ向けの見やすい価格一覧はこちら: <a href="https://babel-fish-prices-frontend.onrender.com/">価格ダッシュボード（Babel Fish Prices Frontend）</a></p>
 <h2>エンドポイント</h2>
 <ul>
   <li><a href="/health"><code>GET /health</code></a> — 死活確認と状態</li>
